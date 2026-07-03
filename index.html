@@ -881,10 +881,9 @@ function renderChkItem(item) {
 
 function renderDefTag(d) {
   if (!d) return '';
-  const mp = d.medidaCod ? `<span class="medida-pill ${d.medidaGrave ? 'medida-grave' : 'medida-normal'}">M${d.medidaCod}</span>` : '';
-  const obs = d.obs ? `<span class="def-obs-prev">${d.obs.substring(0, 50)}${d.obs.length > 50 ? '…' : ''}</span>` : '';
+  const obs = d.obs ? `<span class="def-obs-prev">${d.obs.substring(0, 60)}${d.obs.length > 60 ? '…' : ''}</span>` : '';
   const ft = d.fotos && d.fotos.length ? `<span class="tag">📷 ${d.fotos.length}</span>` : '';
-  return `<div class="chk-def-tag"><span class="def-code-pill">${d.code}</span>${mp}${obs}${ft}</div>`;
+  return `<div class="chk-def-tag"><span class="def-code-pill">⚠ Def.</span>${obs}${ft}</div>`;
 }
 
 function setEstado(id, nuevoEstado) {
@@ -1037,10 +1036,11 @@ async function confirmarFinalizar() {
   inspeccionActual.fechaFin = new Date().toISOString();
   await dbSet('inspecciones', inspeccionActual.id, inspeccionActual);
   cerrarModalFinalizar();
-  // Ocultar botón finalizar, mostrar estado
-  const btnFin = document.getElementById('btn-finalizar');
-  if (btnFin) { btnFin.textContent = '✓ Inspección finalizada'; btnFin.disabled = true; btnFin.style.opacity = '.6'; }
-  renderHome();
+  await renderHome();
+  // Volver a pantalla de inicio limpiando el stack
+  _stack = ['screen-home'];
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active', 'exit'));
+  document.getElementById('screen-home').classList.add('active');
 }
 
 function editarDesdeDetalle() {
@@ -1248,20 +1248,18 @@ function renderActa() {
     const item = items.find(i => i.id === itemId);
     if (!item) return;
     if (!byEsp[item.esp]) byEsp[item.esp] = [];
-    byEsp[item.esp].push({ ...d, seccion: item.seccion, itemTxt: item.texto });
+    byEsp[item.esp].push({ obs: d.obs || '', fotos: d.fotos || [], seccion: item.seccion, itemTxt: item.texto });
   });
 
   document.getElementById('acta-body').innerHTML = Object.entries(byEsp).map(([esp, list]) => `
     <div class="divider"><span class="badge b${esp}">${esp}</span>&nbsp; ${ESP_NAMES[esp]}</div>
-    ${list.map(d => `
-      <div class="def-item${d.medidaGrave ? ' grave' : ''}">
+    ${list.map((d, idx) => `
+      <div class="def-item">
         <div class="def-item-hdr">
-          <span class="def-code-badge">${d.code}</span>
-          <div class="def-desc">${d.codeDesc}</div>
-          ${d.medidaCod ? `<span class="medida-pill ${d.medidaGrave ? 'medida-grave' : 'medida-normal'}">M${d.medidaCod}</span>` : ''}
+          <span class="def-code-badge">⚠ ${idx + 1}</span>
+          <div class="def-desc">${d.itemTxt || ''}</div>
         </div>
-        <div class="def-ref">${d.seccion}${d.itemTxt ? ' · ' + d.itemTxt.substring(0, 80) + (d.itemTxt.length > 80 ? '…' : '') : ''}</div>
-        ${d.medidaDesc ? `<div class="def-ref" style="margin-top:2px">Medida: ${d.medidaCod} — ${d.medidaDesc}</div>` : ''}
+        <div class="def-ref">Sección: ${d.seccion || ''}</div>
         ${d.obs ? `<div class="def-obs-txt">${d.obs}</div>` : ''}
         ${d.fotos && d.fotos.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">
           ${d.fotos.map(src => `<img class="def-photo-thumb" src="${src}" onclick="openPhotoFsUrl(this.src)" alt="">`).join('')}
